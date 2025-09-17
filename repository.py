@@ -99,4 +99,3 @@ class FlightRepository:
         conn.close()
 
         return deleted >0
-

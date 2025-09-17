@@ -1,14 +1,14 @@
 from database import DatabaseConfig, DatabaseConnection
 from migrations import MigrationManager
-from repository import FlightRepository
-from service import FlightService
+from repository import OZONRepository
+from service import OZONService
 from fastapi import FastAPI, HTTPException
-from flight import Flight
+from OZON import OZON
 
 #Initialize
 ## DB config
 db_config= DatabaseConfig(
-    'flightsdb',
+    'OZONsdb',
     'postgres',
     'postgres',
     '123Secret_a',
@@ -19,40 +19,40 @@ db_connection = DatabaseConnection(db_config)
 migration_manager = MigrationManager(db_config)
 migration_manager.create_tables()
 # Repository and Service
-repository = FlightRepository(db_connection)
-service = FlightService(repository)
+repository = OZONRepository(db_connection)
+service = OZONService(repository)
 
 app = FastAPI(
-    title="Flight API"
+    title="OZON API"
 )
 
 @app.get("/")
 async def root():
     return {"message":"Hello from FastAPI"}
 
-@app.get("/flights")
-async def get_flights():
+@app.get("/OZONs")
+async def get_OZON():
     try:
         return service.get_all()
     except Exception as e:
         return HTTPException(status_code=500, detail=f"Ошибка при получении полётов: {str(e)}")
 
-@app.post("/flights")
-async def create_flight(flight_data: dict):
+@app.post("/OZONs")
+async def create_OZON(OZON_data: dict):
     try:
         #Validation
         required_fields = ["price","plane"]
         for field in required_fields:
-            if field not in flight_data:
+            if field not in OZON_data:
                 raise HTTPException(status_code=400,detail=f"Отсутствует обязательное поле {field}")
         
-        flight = Flight(
-            price=flight_data['price'],
-            plane=flight_data['plane']
+        OZON = OZON(
+            price=OZON_data['price'],
+            plane=OZON_data['plane']
         )
 
-        created_flight = service.create_flight(flight)
-        return created_flight
+        created_OZON = service.create_OZON(OZON)
+        return created_OZON
 
     except Exception as e:
         return HTTPException(status_code=500, detail=f"Ошибка при добавлении полёта: {str(e)}")

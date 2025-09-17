@@ -41,14 +41,14 @@ async def get_flights():
 async def create_flight(flight_data: dict):
     try:
         #Validation
-        required_fields = ["price","plane"]
+        required_fields = ["price","name"]
         for field in required_fields:
             if field not in flight_data:
                 raise HTTPException(status_code=400,detail=f"Отсутствует обязательное поле {field}")
         
         flight = Flight(
             price=flight_data['price'],
-            plane=flight_data['plane']
+            plane=flight_data['name']
         )
 
         created_flight = service.create_flight(flight)
@@ -60,5 +60,3 @@ async def create_flight(flight_data: dict):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app,host="0.0.0.0", port=8080)
-
-

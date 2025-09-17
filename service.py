@@ -14,7 +14,7 @@ class FlightService:
         return self.repository.get_all()
         
     def get_by_id(self,flight_id:int):
-        '''Получить полёт по id'''
+        '''Получить продукт по id'''
         return self.repository.get_by_id(flight_id)
     
     def update_flight(self, flight:Flight):
