@@ -1,101 +1,89 @@
-from flight import Flight
+from product import Product
 from database import DatabaseConnection
 
+class ProductRepository:
+    def __init__(self, connection: DatabaseConnection):
+        self.connection = connection
 
-class FlightRepository:
-    '''Класс-репозиторий для доступа к БД'''
-
-    def __init__(self,connection: DatabaseConnection):
-        self.connection=connection
-
-    def create_flight(self, flight:Flight):
-        """Добавление рейса"""
-
+    def create_product(self, product: Product) -> Product:
         conn = self.connection.get_connection()
         cursor = conn.cursor()
-
-        cursor.execute('''
-            INSERT INTO flights
-                        (plane,price)
-                        VALUES (%s,%s)
-            ''',(flight.plane,flight.price))
+        cursor.execute(
+            '''
+            INSERT INTO products (name, price, count, quality)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id
+            ''',
+            (product.name, product.price, product.count, product.quality)
+        )
+        product.id = cursor.fetchone()[0]
         conn.commit()
-
         cursor.close()
         conn.close()
+        return product
 
-        return flight
-    
     def get_all(self):
         conn = self.connection.get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM flights ORDER BY id")
+        cursor.execute("SELECT id, name, price, count, quality FROM products ORDER BY id")
         rows = cursor.fetchall()
-
-        flights = []
+        products = []
         for row in rows:
-            flights.append(Flight(
-                row[0],
-                row[1],
-                row[2]
+            products.append(Product(
+                id=row[0],
+                name=row[1],
+                price=row[2],
+                count=row[3],
+                quality=row[4]
             ))
-              
         cursor.close()
         conn.close()
-        return flights
-        
-    def get_by_id(self,flight_id:int):
-        """Получить рейс по идентификатору"""
+        return products
+
+    def get_by_id(self, product_id: int):
         conn = self.connection.get_connection()
         cursor = conn.cursor()
-
-        cursor.execute("SELECT * FROM flights WHERE id = %s",(flight_id,))
+        cursor.execute("SELECT id, name, price, count, quality FROM products WHERE id = %s", (product_id,))
         row = cursor.fetchone()
-        
         cursor.close()
         conn.close()
-
         if row:
-            return Flight(
-                row[0],
-                row[1],
-                row[2]
+            return Product(
+                id=row[0],
+                name=row[1],
+                price=row[2],
+                count=row[3],
+                quality=row[4]
             )
         return None
-    
-    def update_flight(self, flight:Flight):
-        """Изменить существующий рейс. 
-            Если рейса не существует, ничего не делать."""
+
+    def update_product(self, product: Product) -> Product:
         conn = self.connection.get_connection()
         cursor = conn.cursor()
-        
-        cursor.execute('''
-            UPDATE flights
-            SET price = %s, plane = %s
+        cursor.execute(
+            '''
+            UPDATE products
+            SET name = %s, price = %s, count = %s, quality = %s
             WHERE id = %s
-            ''',(flight.price, flight.plane, flight.id))
-        
-        result = cursor.fetchone()
-        flight.id = result[0]
+            ''',
+            (product.name, product.price, product.count, product.quality, product.id)
+        )
         conn.commit()
-
         cursor.close()
         conn.close()
+        return product
 
-        return flight
-    
-    def delete_flight(self,flight_id:int):
-        """Удалить существующий рейс.
-            Если рейса не существует, ничего не делать."""
+    def delete_product(self, product_id: int) -> bool:
         conn = self.connection.get_connection()
         cursor = conn.cursor()
-        cursor.execute('''
-            DELETE FROM flights WHERE id = %s
-            ''',(flight_id,))
+        cursor.execute(
+            '''
+            DELETE FROM products WHERE id = %s
+            ''',
+            (product_id,)
+        )
         conn.commit()
         deleted = cursor.rowcount
-
         cursor.close()
         conn.close()
-
-        return deleted >0
+        return deleted > 0

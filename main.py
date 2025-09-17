@@ -1,62 +1,60 @@
 from database import DatabaseConfig, DatabaseConnection
 from migrations import MigrationManager
-from repository import FlightRepository
-from service import FlightService
+from repository import ProductRepository
+from service import ProductService
 from fastapi import FastAPI, HTTPException
-from flight import Flight
+from product import Product
 
-#Initialize
-## DB config
-db_config= DatabaseConfig(
-    'flightsdb',
-    'postgres',
-    'postgres',
-    '123Secret_a',
-    5432
+# Инициализация
+db_config = DatabaseConfig(
+    'ozonshopdb',      # Название БД
+    'postgres',        # Имя пользователя
+    'postgres',        # Пароль
+    '123Secret_a',     # Пароль (проверьте корректность!)
+    5432               # Порт
 )
 db_connection = DatabaseConnection(db_config)
-## Migrations
+
+# Миграции
 migration_manager = MigrationManager(db_config)
 migration_manager.create_tables()
-# Repository and Service
-repository = FlightRepository(db_connection)
-service = FlightService(repository)
 
-app = FastAPI(
-    title="Flight API"
-)
+# Репозиторий и сервис
+repository = ProductRepository(db_connection)
+service = ProductService(repository)
+
+app = FastAPI(title="Ozon Shop API")
 
 @app.get("/")
 async def root():
-    return {"message":"Hello from FastAPI"}
+    return {"message": "Добро пожаловать в API магазина Ozon!"}
 
-@app.get("/flights")
-async def get_flights():
+@app.get("/products")
+async def get_products():
     try:
         return service.get_all()
     except Exception as e:
-        return HTTPException(status_code=500, detail=f"Ошибка при получении полётов: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Ошибка сервера: {str(e)}")
 
-@app.post("/flights")
-async def create_flight(flight_data: dict):
+@app.post("/products")
+async def create_product(product_data: dict):
     try:
-        #Validation
-        required_fields = ["price","name"]
+        # Валидация входных данных
+        required_fields = ["name", "price", "count", "quality"]
         for field in required_fields:
-            if field not in flight_data:
-                raise HTTPException(status_code=400,detail=f"Отсутствует обязательное поле {field}")
-        
-        flight = Flight(
-            price=flight_data['price'],
-            plane=flight_data['name']
+            if field not in product_data:
+                raise HTTPException(status_code=400, detail=f"Не указано поле: {field}")
+        product = Product(
+            name=product_data['name'],
+            price=product_data['price'],
+            count=product_data['count'],
+            quality=product_data['quality']
         )
-
-        created_flight = service.create_flight(flight)
-        return created_flight
-
+        created_product = service.create_product(product)
+        return created_product
     except Exception as e:
-        return HTTPException(status_code=500, detail=f"Ошибка при добавлении полёта: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Ошибка при добавлении товара: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app,host="0.0.0.0", port=8080)
+    uvicorn.run(app, host="0.0.0.0", port=8080)
