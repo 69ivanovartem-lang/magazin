@@ -1,5 +1,5 @@
 from repository import ProductRepository
-from product import Product
+from products import Product
 
 class ProductService:
     def __init__(self, repository: ProductRepository):

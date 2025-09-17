@@ -1,9 +1,9 @@
 from database import DatabaseConfig, DatabaseConnection
-from migrations import MigrationManager
+from migration import MigrationManager
 from repository import ProductRepository
 from service import ProductService
 from fastapi import FastAPI, HTTPException
-from product import Product
+from products import Product
 
 # Инициализация
 db_config = DatabaseConfig(
