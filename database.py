@@ -1,60 +1,41 @@
-from database import DatabaseConfig, DatabaseConnection
-from migrations import MigrationManager
-from repository import ProductRepository
-from service import ProductService
-from fastapi import FastAPI, HTTPException
-from product import Product
+import psycopg2
 
-# Инициализация
-db_config = DatabaseConfig(
-    'shopdb',        # Название БД
-    'postgres',      # Пользователь
-    'postgres',      # Пароль
-    '123Secret_a',   # Пароль
-    5432             # Порт
-)
-db_connection = DatabaseConnection(db_config)
+class DatabaseConfig:
+    '''Класс конфигурации БД'''
+    def __init__(self,
+                 database: str = "", 
+                 host: str="", 
+                 user:str = "", 
+                 password:str = "",
+                 port:int="5432"):
+        self.host=host,
+        self.database=database,
+        self.user=user,
+        self.password=password,
+        self.port=port
 
-# Миграции
-migration_manager = MigrationManager(db_config)
-migration_manager.create_tables()
+    def get_connection_params(self):
+        return{
+            'host':self.host[0],
+            'database':self.database[0],
+            'user':self.user[0],
+            'password':self.password[0],
+            'port':self.port
+        }
+    
+class DatabaseConnection:
+    '''Класс подключения к БД'''
 
-# Репозиторий и сервис
-repository = ProductRepository(db_connection)
-service = ProductService(repository)
+    def __init__(self, config:DatabaseConfig):
+        self.config = config
+        self._connection = None
+    
+    def get_connection(self):
+        if self._connection is None or self._connection.closed:
+            print(self.config.get_connection_params())
+            self._connection = psycopg2.connect(**self.config.get_connection_params())
+        return self._connection
 
-app = FastAPI(title="Ozon Shop API")
-
-@app.get("/")
-async def root():
-    return {"message": "Добро пожаловать в магазин Ozon!"}
-
-@app.get("/products")
-async def get_products():
-    try:
-        return service.get_all()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка сервера: {str(e)}")
-
-@app.post("/products")
-async def create_product(product_data: dict):
-    try:
-        # Валидация входных данных
-        required_fields = ["name", "price", "count", "quality"]
-        for field in required_fields:
-            if field not in product_data:
-                raise HTTPException(status_code=400, detail=f"Не указано поле: {field}")
-        product = Product(
-            name=product_data['name'],
-            price=product_data['price'],
-            count=product_data['count'],
-            quality=product_data['quality']
-        )
-        created_product = service.create_product(product)
-        return created_product
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка при создании товара: {str(e)}")
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    def close_connection(self):
+        if self._connection and not self._connection.closed:
+            self._connection.close()
